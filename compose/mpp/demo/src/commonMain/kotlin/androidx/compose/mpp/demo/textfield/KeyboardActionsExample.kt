@@ -83,17 +83,17 @@ fun KeyboardActionsExample() {
             TextBlock(
                 imeActionName = ImeAction.Previous,
                 keyboardActions = definedKeyboardActions,
-                id = "4"
+                id = "5"
             )
         }
         item {
             TextBlock(
                 imeActionName = ImeAction.Search,
                 keyboardActions = definedKeyboardActions,
-                id = "5"
+                id = "6"
             )
         }
-        item { TextBlock(imeActionName = ImeAction.Send, keyboardActions = definedKeyboardActions, id = "6") }
+        item { TextBlock(imeActionName = ImeAction.Send, keyboardActions = definedKeyboardActions, id = "7") }
     }
 }
 

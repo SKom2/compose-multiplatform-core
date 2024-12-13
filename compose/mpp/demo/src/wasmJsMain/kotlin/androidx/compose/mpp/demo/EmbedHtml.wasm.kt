@@ -18,20 +18,30 @@ package androidx.compose.mpp.demo
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import kotlinx.browser.document
+import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLDivElement
+
+fun getCanvasCoordinates(): Pair<Double, Double>? {
+    val canvasElement = document.querySelector("canvas") as? HTMLCanvasElement
+    return canvasElement?.getBoundingClientRect()?.let {
+        it.left to it.top
+    }
+}
 
 @Composable
 actual fun Modifier.addHtmlElementWithCompose(id: String): Modifier {
-    val currentId = remember { id }
+    val density = LocalDensity.current.density
+    val canvasCoordinates = getCanvasCoordinates()
 
-    DisposableEffect(currentId) {
+    DisposableEffect(id) {
         val div = document.createElement("div") as HTMLDivElement
-        div.id = currentId
+        div.id = id
         div.style.apply {
             position = "absolute"
             backgroundColor = "red"
@@ -43,17 +53,39 @@ actual fun Modifier.addHtmlElementWithCompose(id: String): Modifier {
         document.body?.appendChild(div)
 
         onDispose {
-            println("onDispose")
             div.remove()
         }
     }
 
     return this then Modifier.onGloballyPositioned { coordinates ->
+        val bounds = coordinates.boundsInRoot()
         val position = coordinates.positionInRoot()
-        val existingDiv = document.getElementById(currentId) as HTMLDivElement
-        existingDiv.style.apply {
-            left = "${position.x}px"
-            top = "${position.y}px"
+        val existingDiv = document.getElementById(id) as HTMLDivElement
+        val scaledX = position.x / density
+        val scaledY = position.y / density
+
+        if (canvasCoordinates != null) {
+            val (canvasX, canvasY) = canvasCoordinates
+            val adjustedX = canvasX + scaledX
+            val adjustedY = canvasY + scaledY
+
+            existingDiv.style.apply {
+                left = "${adjustedX}px"
+                top = "${adjustedY}px"
+            }
+        } else {
+            existingDiv.style.apply {
+                left = "${scaledX}px"
+                top = "${scaledY}px"
+            }
+        }
+
+        val topClip = maxOf((bounds.top.toDouble() - position.y) / density, 0.0)
+
+        if (topClip > 0) {
+            existingDiv.style.setProperty("clip-path", "inset(${topClip}px 0 0 0)")
+        } else {
+            existingDiv.style.removeProperty("clip-path")
         }
     }
 }
